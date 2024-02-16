@@ -4,6 +4,7 @@
   - [Hardware](#hardware)
     - [Raspberry Pi](#raspberry-pi)
     - [Sensors](#sensors)
+    - [Connections](#connections)
   - [Software](#software)
     - [Raspberry Pi Setup](#raspberry-pi-setup)
 
@@ -21,6 +22,10 @@
 - Ambient Light Sensor (I2C Interface): [DFRobot](https://www.dfrobot.com/product-2664.html)
 - Soil Moisture Sensor (Analog Interface): [Amazon](https://a.co/d/6MesPOF)
 - ADS1115 ADC (for Soil Moisture Meter, I2C Interface): [Amazon](https://a.co/d/3aM6eM3)
+
+### Connections
+
+![rpi_zero2w_pinout.png](rpi_zero2w_pinout.png)
 
 ## Software
 
