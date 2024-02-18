@@ -1,0 +1,12 @@
+[Unit]
+Description=gardenmon data collection service
+After=multi-user.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+ExecStart=${GARDENMON_PATH}/gardenmon.py
+
+[Install]
+WantedBy=multi-user.target

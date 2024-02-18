@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3 -u
 
 import adafruit_sht31d
 import board
@@ -74,8 +74,14 @@ class ds18b20(sensor):
         return lines
 
 def gardenmon_main():
+    log_folder = '/var/log/gardenmon'
+    if not os.path.exists(log_folder):
+        os.makedirs(log_folder)
+
     sht30_sensor = sht30()
     ds18b20_sensor = ds18b20()
+
+    print("gardenmon starting...")
 
     while True:
         current_time = datetime.datetime.now()
@@ -90,15 +96,15 @@ def gardenmon_main():
         ds18b20_temperature = ds18b20_sensor.read()
         row.extend(["ds18b20_temperature", f"{ds18b20_temperature:0.1f}", "F"])
 
-        with open("main.csv", "a") as csvfile:
+        with open(f"{log_folder}/main.csv", "a") as csvfile:
             csvwriter = csv.writer(csvfile, delimiter=',')
             csvwriter.writerow(row)
 
-        with open(f"{current_time.date()}.csv", "a") as csvfile:
+        with open(f"{log_folder}/{current_time.date()}.csv", "a") as csvfile:
             csvwriter = csv.writer(csvfile, delimiter=',')
             csvwriter.writerow(row)
 
-        time.sleep(60)
+        time.sleep(1)
 
 if __name__ == "__main__":
     gardenmon_main()
