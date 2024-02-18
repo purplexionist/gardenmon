@@ -7,8 +7,9 @@ set -e
 sudo apt update
 sudo apt -y update
 
-# Gotta have vim.
+# Gotta have vim. Set it to Git default.
 sudo apt install vim -y
+git config --global core.editor "vim"
 
 # Enable serial port and enable interactive login.
 sudo raspi-config nonint do_serial 0
