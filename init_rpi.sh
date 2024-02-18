@@ -17,6 +17,9 @@ git config --global credential.helper store
 # Enable serial port and enable interactive login.
 sudo raspi-config nonint do_serial 0
 
+# Install smbus library for I2C in Python.
+sudo apt install python3-smbus -y
+
 # Install Python/Pip and installed required modules.
 sudo apt install python3 python3-pip -y
 pip install -r requirements.txt

@@ -6,16 +6,23 @@ import csv
 import datetime
 import glob
 import shutil
+import smbus
 import time
 import os
 
 from abc import ABC, abstractmethod
 
-def c_to_f(c: float):
+def c_to_f(c: float) -> float:
     """
     Celcius to Farenheit.
     """
     return (c * 1.8) + 32
+
+def swap16(x: int) -> int:
+    """
+    Swap bytes in 16 bit integer.
+    """
+    return ((x & 0x00ff) << 8) | ((x & 0xff00) >> 8)
 
 class sensor(ABC):
     """
@@ -73,6 +80,39 @@ class ds18b20(sensor):
         f.close()
         return lines
 
+class ads1115(sensor):
+    """
+    Sensor class for the ads1115 ADC, with soil moisture sensor analog input,
+    connected via I2C.
+    """
+
+    def __init__(self):
+        self.i2cbus = smbus.SMBus(1)
+        # addr bit is pulled to ground.
+        self.i2caddr = 0x48
+        # Set the config register at 0x01. Set voltage range to +-4.096V and
+        # enable continuous-conversion mode.
+        self.i2cbus.write_word_data(self.i2caddr, 0x01, swap16(0x8283))
+        # What to add to decimal value to read ~0V as ~0. Found via
+        # empirical testing.
+        self.trim = 4800
+
+    def read(self) -> int:
+        # Read 16-bit value from ADC.
+        data = self.i2cbus.read_word_data(self.i2caddr, 0x00)
+
+        # Data endianess needs to be swapped.
+        data = swap16(data)
+
+        # Convert 16-bit two's complement to decimal.
+        if (data & (1 << (16 - 1))) != 0:
+            data = data - (1 << 16)
+
+        # Add trim offset to value.
+        data += self.trim
+
+        return data
+
 def gardenmon_main():
     log_folder = '/var/log/gardenmon'
     if not os.path.exists(log_folder):
@@ -80,6 +120,7 @@ def gardenmon_main():
 
     sht30_sensor = sht30()
     ds18b20_sensor = ds18b20()
+    ads1115_sensor = ads1115()
 
     print("gardenmon starting...")
 
@@ -95,6 +136,9 @@ def gardenmon_main():
 
         ds18b20_temperature = ds18b20_sensor.read()
         row.extend(["ds18b20_temperature", f"{ds18b20_temperature:0.1f}", "F"])
+
+        ads1115_val = ads1115_sensor.read()
+        row.extend(["ads1115_val", f"{ads1115_val}", "decimal_value"])
 
         with open(f"{log_folder}/main.csv", "a") as csvfile:
             csvwriter = csv.writer(csvfile, delimiter=',')
