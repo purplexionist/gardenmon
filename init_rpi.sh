@@ -18,4 +18,7 @@ sudo raspi-config nonint do_serial 0
 sudo apt install python3 python3-pip -y
 pip install -r requirements.txt
 
+# Enable I2C.
+sudo raspi-config nonint do_i2c 0
+
 echo "You should reboot now..."
