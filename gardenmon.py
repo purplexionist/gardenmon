@@ -33,6 +33,19 @@ class sensor(ABC):
     def read(self):
         pass
 
+class cpu_temp(sensor):
+    """
+    Sensor class for the temperature sensor for the RPi CPU.
+    """
+
+    def __init__(self):
+        self.cpu_temp_file = "/sys/class/thermal/thermal_zone0/temp"
+
+    def read(self) -> dict:
+        with open(self.cpu_temp_file) as cpu_temp_file:
+            val = c_to_f(int(cpu_temp_file.read()) / 1000.0)
+        return val
+
 class sht30(sensor):
     """
     Sensor class for the SHT30 temperature and humidity sensor. This sensor
@@ -118,6 +131,7 @@ def gardenmon_main():
     if not os.path.exists(log_folder):
         os.makedirs(log_folder)
 
+    cpu_temp_sensor = cpu_temp()
     sht30_sensor = sht30()
     ds18b20_sensor = ds18b20()
     ads1115_sensor = ads1115()
@@ -129,6 +143,9 @@ def gardenmon_main():
 
         timestamp = current_time.strftime('%Y-%m-%d %H:%M:%S')
         row = [timestamp]
+
+        cpu_temp_val = cpu_temp_sensor.read()
+        row.extend(["cpu_temperature", f"{cpu_temp_val:0.1f}", "F"])
 
         sht30_vals = sht30_sensor.read()
         row.extend(["sht30_temperature", f"{sht30_vals['temperature']:0.1f}", "F"])
