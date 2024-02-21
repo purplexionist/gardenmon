@@ -23,6 +23,10 @@
 - Soil Moisture Sensor (Analog Interface): [Amazon](https://a.co/d/6MesPOF)
 - ADS1115 ADC (for Soil Moisture Meter, I2C Interface): [Amazon](https://a.co/d/3aM6eM3)
 
+### GardenMon Interface Board
+
+The GardenMon uses the [GardenMon Interface Board](https://github.com/anthonyneedles/gardenmon-interfaceboard) for connecting the sensors to the RPi.
+
 ### Connections
 
 ![rpi_zero2w_pinout.png](rpi_zero2w_pinout.png)
