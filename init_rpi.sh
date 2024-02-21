@@ -3,6 +3,11 @@
 # Exit script on error.
 set -e
 
+if [ ! -f ./gardenmon.py ] ; then
+	echo "ERROR: Must run in gardenmon directory" 1>&2
+	exit 1
+fi
+
 # Update apt as normal.
 sudo apt update
 sudo apt -y update
