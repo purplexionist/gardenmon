@@ -31,6 +31,17 @@ class sensor(ABC):
 
     @abstractmethod
     def read(self):
+        """
+        Read sensor data.
+        """
+        pass
+    
+    @abstractmethod
+    def get_value(self):
+        """
+        Return value of a read. Should handle error cases, and still return
+        a value.
+        """
         pass
 
 class cpu_temp(sensor):
@@ -41,10 +52,17 @@ class cpu_temp(sensor):
     def __init__(self):
         self.cpu_temp_file = "/sys/class/thermal/thermal_zone0/temp"
 
-    def read(self) -> dict:
+    def read(self) -> float:
         with open(self.cpu_temp_file) as cpu_temp_file:
             val = c_to_f(int(cpu_temp_file.read()) / 1000.0)
         return val
+
+    def get_value(self) -> float:
+        try:
+            return self.read()
+        except Exception as e:
+            print(f"ERROR: Failure to read CPU temp sensor: {e}")
+            return 9999.9
 
 class aths(sensor):
     """
@@ -62,6 +80,14 @@ class aths(sensor):
         vals["temperature"] = c_to_f(self.sensor.temperature)
         vals["humidity"] = self.sensor.relative_humidity
         return vals
+    
+    def get_value(self) -> dict:
+        try:
+            return self.read()
+        #except Exception as e:
+        except:
+            #print(f"ERROR: Failure to read ATHS sensor: {e}")
+            return { 'temperature': 9999.9, 'humidity': 9999.9 }
 
 class sts(sensor):
     """
@@ -92,6 +118,13 @@ class sts(sensor):
         lines = f.readlines()
         f.close()
         return lines
+    
+    def get_value(self) -> float:
+        try:
+            return self.read()
+        except Exception as e:
+            print(f"ERROR: Failure to read STS sensor: {e}")
+            return 9999.9
 
 class sms(sensor):
     """
@@ -125,12 +158,19 @@ class sms(sensor):
         data += self.trim
 
         return data
+    
+    def get_value(self) -> int:
+        try:
+            return self.read()
+        except Exception as e:
+            print(f"ERROR: Failure to read SMS sensor: {e}")
+            return 9999
 
 def gardenmon_main():
     log_folder = '/var/log/gardenmon'
     if not os.path.exists(log_folder):
         os.makedirs(log_folder)
-
+    
     cpu_temp_sensor = cpu_temp()
     aths_sensor = aths()
     sts_sensor = sts()
