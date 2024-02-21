@@ -46,10 +46,10 @@ class cpu_temp(sensor):
             val = c_to_f(int(cpu_temp_file.read()) / 1000.0)
         return val
 
-class sht30(sensor):
+class aths(sensor):
     """
-    Sensor class for the SHT30 temperature and humidity sensor. This sensor
-    is connected via I2C.
+    Ambient Temperature/Humidity Sensor. Underlying sensor is the SHT30
+    temperature and humidity sensor. Connected via I2C.
     """
 
     def __init__(self):
@@ -63,10 +63,10 @@ class sht30(sensor):
         vals["humidity"] = self.sensor.relative_humidity
         return vals
 
-class ds18b20(sensor):
+class sts(sensor):
     """
-    Sensor class for the DS18B20 temperature sensor. This sensor is connected
-    via 1 wire.
+    Soil Temperature Sensor. Underlying sensor is the DS18B20 temperature
+    sensor. Connected via 1 wire.
     """
 
     def __init__(self):
@@ -93,10 +93,10 @@ class ds18b20(sensor):
         f.close()
         return lines
 
-class ads1115(sensor):
+class sms(sensor):
     """
-    Sensor class for the ads1115 ADC, with soil moisture sensor analog input,
-    connected via I2C.
+    Soil Moisture Sensor. Underlying sensor is a soil moisture probe with
+    the output fed into an ADS1115 ADC. Connected via I2C.
     """
 
     def __init__(self):
@@ -132,9 +132,9 @@ def gardenmon_main():
         os.makedirs(log_folder)
 
     cpu_temp_sensor = cpu_temp()
-    sht30_sensor = sht30()
-    ds18b20_sensor = ds18b20()
-    ads1115_sensor = ads1115()
+    aths_sensor = aths()
+    sts_sensor = sts()
+    sms_sensor = sms()
 
     print("gardenmon starting...")
 
@@ -145,17 +145,17 @@ def gardenmon_main():
         row = [timestamp]
 
         cpu_temp_val = cpu_temp_sensor.read()
-        row.extend(["cpu_temperature", f"{cpu_temp_val:0.1f}", "F"])
+        row.extend(["CPU Temperature", f"{cpu_temp_val:0.1f}", "F"])
 
-        sht30_vals = sht30_sensor.read()
-        row.extend(["sht30_temperature", f"{sht30_vals['temperature']:0.1f}", "F"])
-        row.extend(["sht30_humidity",    f"{sht30_vals['humidity']:0.1f}",    "%"])
+        aths_vals = aths_sensor.read()
+        row.extend(["Ambient Temperature", f"{aths_vals['temperature']:0.1f}", "F"])
+        row.extend(["Ambient Humidity",    f"{aths_vals['humidity']:0.1f}",    "%"])
 
-        ds18b20_temperature = ds18b20_sensor.read()
-        row.extend(["ds18b20_temperature", f"{ds18b20_temperature:0.1f}", "F"])
+        sts_temperature = sts_sensor.read()
+        row.extend(["Soil Temperature", f"{sts_temperature:0.1f}", "F"])
 
-        ads1115_val = ads1115_sensor.read()
-        row.extend(["ads1115_val", f"{ads1115_val}", "decimal_value"])
+        sms_val = sms_sensor.read()
+        row.extend(["Soil Moisture Value", f"{sms_val}", "decimal_value"])
 
         with open(f"{log_folder}/main.csv", "a") as csvfile:
             csvwriter = csv.writer(csvfile, delimiter=',')
