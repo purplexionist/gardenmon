@@ -91,27 +91,22 @@ class sts(sensor):
         # Folder will appear as 28-xxxxxxxxxxxx.
         device_folder = glob.glob(base_dir + '28*')[0]
         self.device_file = device_folder + '/w1_slave'
-        
+
         # What to add to Fahrenheit temperature to measure "true".
         self.trim = -2.2
 
     def read(self) -> float:
-        lines = self.read_temp_raw()
-        while lines[0].strip()[-3:] != 'YES':
-            time.sleep(0.2)
-            lines = self.read_temp_raw()
-        equals_pos = lines[1].find('t=')
-        if equals_pos != -1:
-            temp_string = lines[1][equals_pos+2:]
-            temp_c = float(temp_string) / 1000.0
-            temp_f = c_to_f(temp_c)
-            return temp_f + self.trim
+        with open(self.device_file, 'r') as device_file:
+            lines = device_file.readlines()
 
-    def read_temp_raw(self):
-        f = open(self.device_file, 'r')
-        lines = f.readlines()
-        f.close()
-        return lines
+        if "YES" not in lines[0] and "t=" not in lines[1]:
+            return 0 # TODO: exception
+
+        # The end of the second line has "t=X", where X is the temperature
+        # reading in Celsius * 1000.
+        temperature_string = lines[1][lines[1].find("t=") + 2:]
+        temperature_f = c_to_f(float(temperature_string) / 1000.0)
+        return temperature_f + self.trim
 
 class sms(sensor):
     """
