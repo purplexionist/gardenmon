@@ -124,11 +124,14 @@ class sms(sensor):
 
     def __init__(self):
         self.i2cbus = smbus.SMBus(1)
+
         # addr bit is pulled to ground.
         self.i2caddr = 0x48
+
         # Set the config register at 0x01. Set voltage range to +-4.096V and
         # enable continuous-conversion mode.
         self.i2cbus.write_word_data(self.i2caddr, 0x01, swap16(0x8283))
+
         # What to add to decimal value to read ~0V as ~0. Found via
         # empirical testing.
         self.trim = 4800
@@ -149,6 +152,28 @@ class sms(sensor):
 
         return data
 
+class als(sensor):
+    """
+    Ambient Light Sensor. Underlying sensor is probably a BH1750. Connected
+    via I2C.
+    """
+
+    def __init__(self):
+        self.i2cbus = smbus.SMBus(1)
+        self.i2caddr = 0x23
+
+        # What to add to lux value to measure "true".
+        self.trim = 0.0
+
+    def read(self) -> float:
+        # From register 0x10, sensor readings are 2 bytes:
+        #   0 : MSB of lux reading
+        #   1 : LSB of lux reading
+        data = self.i2cbus.read_i2c_block_data(self.i2caddr, 0x10, 2)
+        val = data[0] << 8 | data[1]
+        lux = float(val)/1.2 + self.trim
+        return lux
+
 def gardenmon_main():
     log_folder = '/var/log/gardenmon'
     if not os.path.exists(log_folder):
@@ -158,6 +183,7 @@ def gardenmon_main():
     aths_sensor = aths()
     sts_sensor = sts()
     sms_sensor = sms()
+    als_sensor = als()
 
     time.sleep(1)
 
@@ -181,6 +207,9 @@ def gardenmon_main():
 
         sms_val = sms_sensor.read()
         row.extend(["Soil Moisture Value", f"{sms_val}", "decimal_value"])
+
+        als_val = als_sensor.read()
+        row.extend(["Ambient Light", f"{als_val:0.1f}", "lx"])
 
         with open(f"{log_folder}/main.csv", "a") as csvfile:
             csvwriter = csv.writer(csvfile, delimiter=',')
