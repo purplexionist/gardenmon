@@ -91,6 +91,9 @@ class sts(sensor):
         # Folder will appear as 28-xxxxxxxxxxxx.
         device_folder = glob.glob(base_dir + '28*')[0]
         self.device_file = device_folder + '/w1_slave'
+        
+        # What to add to Fahrenheit temperature to measure "true".
+        self.trim = -2.2
 
     def read(self) -> float:
         lines = self.read_temp_raw()
@@ -102,7 +105,7 @@ class sts(sensor):
             temp_string = lines[1][equals_pos+2:]
             temp_c = float(temp_string) / 1000.0
             temp_f = c_to_f(temp_c)
-            return temp_f
+            return temp_f + self.trim
 
     def read_temp_raw(self):
         f = open(self.device_file, 'r')
