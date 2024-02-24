@@ -15,12 +15,6 @@ def c_to_f(c: float) -> float:
     """
     return (c * 1.8) + 32
 
-def swap16(x: int) -> int:
-    """
-    Swap bytes in 16 bit integer.
-    """
-    return ((x & 0x00ff) << 8) | ((x & 0xff00) >> 8)
-
 class sensor(ABC):
     """
     Base class for all sensors.
@@ -130,27 +124,27 @@ class sms(sensor):
 
         # Set the config register at 0x01. Set voltage range to +-4.096V and
         # enable continuous-conversion mode.
-        self.i2cbus.write_word_data(self.i2caddr, 0x01, swap16(0x8283))
+        self.i2cbus.write_i2c_block_data(self.i2caddr, 0x01, [0x82, 0x83])
 
         # What to add to decimal value to read ~0V as ~0. Found via
         # empirical testing.
         self.trim = 4800
 
     def read(self) -> int:
-        # Read 16-bit value from ADC.
-        data = self.i2cbus.read_word_data(self.i2caddr, 0x00)
-
-        # Data endianess needs to be swapped.
-        data = swap16(data)
+        # From register 0x00, sensor readings are 2 bytes:
+        #   0 : MSB of ADC reading
+        #   1 : LSB of ADC reading
+        data = self.i2cbus.read_i2c_block_data(self.i2caddr, 0x00)
+        val = data[0] << 8 | data[1]
 
         # Convert 16-bit two's complement to decimal.
-        if (data & (1 << (16 - 1))) != 0:
-            data = data - (1 << 16)
+        if (val & (1 << (16 - 1))) != 0:
+            val = val - (1 << 16)
 
         # Add trim offset to value.
-        data += self.trim
+        val += self.trim
 
-        return data
+        return val
 
 class als(sensor):
     """
