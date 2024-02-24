@@ -55,7 +55,7 @@ sudo reboot
 
 #### Further Setup
 
-To share the log drives (for example, with the user "aneedles"):
+To share the log drives (for example, with the user `aneedles`):
 
 ```
 sudo apt install samba samba-common-bin
@@ -77,3 +77,22 @@ sudo systemctl restart smbd
 ```
 
 Should be found on Windows at `\\gardenmon\gardenmon_logs`.
+
+### Useful Commands
+
+To start/stop/restart the gardenmon service:
+```
+sudo systemctl start gardenmon
+sudo systemctl stop gardenmon
+sudo systemctl restart gardenmon
+```
+
+To observe the status of the gardenmon service:
+```
+sudo systemctl status gardenmon
+```
+
+To read the output of the service:
+```
+journalctl -eu gardenmon
+```
