@@ -45,9 +45,35 @@ The GardenMon uses the [GardenMon Interface Board](https://github.com/anthonynee
 ```
 sudo apt install git -y
 git clone https://github.com/anthonyneedles/gardenmon.git
-./gardenmon/init_rpi.sh
+cd gardenmon
+./init_rpi.sh
 ``` 
 3. After successful running the init script, reboot with:
 ```
 sudo reboot
 ```
+
+#### Further Setup
+
+To share the log drives (for example, with the user "aneedles"):
+
+```
+sudo apt install samba samba-common-bin
+
+sudo mkdir -m 1777 /var/log/gardenmon
+
+sudo echo "[gardenmon_logs]
+path = /var/log/gardenmon
+writeable = yes
+browseable = yes
+create mask = 0777
+directory mask = 0777
+public = no" >> /etc/samba/smb.conf
+
+# Probably enter the same password as login.
+sudo smbpasswd -a aneedles
+
+sudo systemctl restart smbd
+```
+
+Should be found on Windows at `\\gardenmon\gardenmon_logs`.
