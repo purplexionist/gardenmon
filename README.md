@@ -4,14 +4,17 @@
   - [Hardware](#hardware)
     - [Raspberry Pi](#raspberry-pi)
     - [Sensors](#sensors)
+    - [GardenMon Interface Board](#gardenmon-interface-board)
     - [Connections](#connections)
   - [Software](#software)
     - [Raspberry Pi Setup](#raspberry-pi-setup)
+      - [Further Setup](#further-setup)
+    - [Useful Commands](#useful-commands)
 
 ## Hardware
 
 ### Raspberry Pi
-- Raspberry Pi Zero 2 W: [Amazon](https://a.co/d/aA3E14W) 
+- Raspberry Pi Zero 2 W: [Amazon](https://a.co/d/aA3E14W)
 - Raspberry Pi Zero 2 W 2x20 Header: [Amazon](https://a.co/d/92REUrK)
 - microSD Card, something like 128GB: [Amazon](https://a.co/d/crgGpk7)
 - USB to TTL Serial Adapter (for debug): [Amazon](https://a.co/d/1D9rg9l)
@@ -47,7 +50,7 @@ sudo apt install git -y
 git clone https://github.com/anthonyneedles/gardenmon.git
 cd gardenmon
 ./init_rpi.sh
-``` 
+```
 3. After successful running the init script, reboot with:
 ```
 sudo reboot
