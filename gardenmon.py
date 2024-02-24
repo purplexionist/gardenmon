@@ -1,14 +1,11 @@
 #!/usr/bin/python3 -u
 
-import adafruit_sht31d
-import board
 import csv
 import datetime
 import glob
-import shutil
+import os
 import smbus
 import time
-import os
 
 from abc import ABC, abstractmethod
 
@@ -53,14 +50,40 @@ class aths(sensor):
     """
 
     def __init__(self):
-        # Create sensor object, communicating over the board's default I2C bus.
-        i2c = board.I2C()
-        self.sensor = adafruit_sht31d.SHT31D(i2c)
+        self.i2cbus = smbus.SMBus(1)
+
+        # addr bit is pulled to ground.
+        self.i2caddr = 0x44
+
+        # Set the sensor for high repeatability and 10 measurements per
+        # second. Kinda overkill, but we aren't on battery power.
+        self.i2cbus.write_byte_data(self.i2caddr, 0x27, 0x37)
+
+        # What to add to Fahrenheit temperature to measure "true".
+        self.temperature_trim = 0.0
+
+        # What to add to relative humidity to measure "true".
+        self.humidity_trim = 0.0
 
     def read(self) -> dict:
+        # Sensor readings are 6 bytes:
+        #   0 : MSB of temp reading
+        #   1 : LSB of temp reading
+        #   2 : CRC of temp reading (ignored)
+        #   3 : MSB of humidity reading
+        #   4 : LSB of humidity reading
+        #   5 : CRC of humidity reading (ignored)
+        data = self.i2cbus.read_i2c_block_data(self.i2caddr, 0x00, 6)
+        temperature_raw = data[0] << 8 | data[1]
+        humidity_raw    = data[3] << 8 | data[4]
+
+        # Apply conversion formulas to raw values.
+        temperature_f    = ((temperature_raw * 315.0) / 0xFFFF) - 49 + self.temperature_trim
+        humidity_percent = ((humidity_raw    * 100.0) / 0xFFFF) + self.humidity_trim
+
         vals = dict();
-        vals["temperature"] = c_to_f(self.sensor.temperature)
-        vals["humidity"] = self.sensor.relative_humidity
+        vals["temperature"] = temperature_f
+        vals["humidity"] = humidity_percent
         return vals
 
 class sts(sensor):
@@ -135,6 +158,8 @@ def gardenmon_main():
     aths_sensor = aths()
     sts_sensor = sts()
     sms_sensor = sms()
+
+    time.sleep(1)
 
     print("gardenmon starting...")
 
