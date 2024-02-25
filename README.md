@@ -11,6 +11,10 @@
       - [Further Setup](#further-setup)
     - [Useful Commands](#useful-commands)
 
+## Block Diagram
+
+![gardenmon_block_diagram.jpg](./docs/gardenmon_block_diagram.jpg)
+
 ## Hardware
 
 ### Raspberry Pi
@@ -32,7 +36,7 @@ The GardenMon uses the [GardenMon Interface Board](https://github.com/anthonynee
 
 ### Connections
 
-![rpi_zero2w_pinout.png](rpi_zero2w_pinout.png)
+![rpi_zero2w_pinout.png](./docs/rpi_zero2w_pinout.png)
 
 ## Software
 
