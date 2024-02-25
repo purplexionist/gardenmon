@@ -1,13 +1,13 @@
 #!/usr/bin/python3 -u
 
+from abc import ABC, abstractmethod
 import csv
 import datetime
 import glob
+import logging
 import os
 import smbus
 import time
-
-from abc import ABC, abstractmethod
 
 def c_to_f(c: float) -> float:
     """
@@ -22,6 +22,9 @@ class sensor(ABC):
 
     @abstractmethod
     def read(self):
+        """
+        Read sensor data.
+        """
         pass
 
 class cpu_temp(sensor):
@@ -32,10 +35,18 @@ class cpu_temp(sensor):
     def __init__(self):
         self.cpu_temp_file = "/sys/class/thermal/thermal_zone0/temp"
 
-    def read(self) -> dict:
+    def read(self) -> float:
         with open(self.cpu_temp_file) as cpu_temp_file:
             val = c_to_f(int(cpu_temp_file.read()) / 1000.0)
         return val
+
+    def get_value(self) -> float:
+        try:
+            return self.read()
+        except:
+            logging.exception(f"Failure to read CPU temp sensor")
+            return 99999.9
+
 
 class aths(sensor):
     """
@@ -53,10 +64,7 @@ class aths(sensor):
         # second. Kinda overkill, but we aren't on battery power.
         self.i2cbus.write_byte_data(self.i2caddr, 0x27, 0x37)
 
-        # What to add to Fahrenheit temperature to measure "true".
         self.temperature_trim = 0.0
-
-        # What to add to relative humidity to measure "true".
         self.humidity_trim = 0.0
 
     def read(self) -> dict:
@@ -80,6 +88,13 @@ class aths(sensor):
         vals["humidity"] = humidity_percent
         return vals
 
+    def get_value(self) -> dict:
+        try:
+            return self.read()
+        except:
+            logging.exception(f"Failure to read Ambient Temperature/Humidity Sensor")
+            return { "temperature": 9999.9, "humidity": 9999.9 }
+
 class sts(sensor):
     """
     Soil Temperature Sensor. Underlying sensor is the DS18B20 temperature
@@ -87,26 +102,35 @@ class sts(sensor):
     """
 
     def __init__(self):
+        # Device will appear at "/sys/bus/w1/devices/28-xxxxxxxxxxxx/w1_slave".
         base_dir = '/sys/bus/w1/devices/'
-        # Folder will appear as 28-xxxxxxxxxxxx.
         device_folder = glob.glob(base_dir + '28*')[0]
         self.device_file = device_folder + '/w1_slave'
 
-        # What to add to Fahrenheit temperature to measure "true".
-        self.trim = -2.2
+        self.temperature_trim = -2.2
 
     def read(self) -> float:
         with open(self.device_file, 'r') as device_file:
             lines = device_file.readlines()
 
         if "YES" not in lines[0] and "t=" not in lines[1]:
-            return 0 # TODO: exception
+            raise RuntimeError("Invalid reading from Soil Temperature Reading")
 
         # The end of the second line has "t=X", where X is the temperature
         # reading in Celsius * 1000.
         temperature_string = lines[1][lines[1].find("t=") + 2:]
         temperature_f = c_to_f(float(temperature_string) / 1000.0)
-        return temperature_f + self.trim
+        return temperature_f + self.temperature_trim
+
+    def get_value(self) -> float:
+        try:
+            # If the sensor is disconnected from the 1wire connection to the
+            # board this will read 0, without any way to really detect the
+            # error condition.
+            return self.read()
+        except:
+            logging.exception(f"Failure to read Soil Temperature Sensor")
+            return 99999.9
 
 class sms(sensor):
     """
@@ -126,7 +150,7 @@ class sms(sensor):
 
         # What to add to decimal value to read ~0V as ~0. Found via
         # empirical testing.
-        self.trim = 4800
+        self.value_trim = 4800
 
     def read(self) -> int:
         # From register 0x00, sensor readings are 2 bytes:
@@ -139,10 +163,16 @@ class sms(sensor):
         if (val & (1 << (16 - 1))) != 0:
             val = val - (1 << 16)
 
-        # Add trim offset to value.
-        val += self.trim
+        val += self.value_trim
 
         return val
+
+    def get_value(self) -> int:
+        try:
+            return self.read()
+        except:
+            logging.exception(f"Failure to read Soil Moisture Sensor")
+            return 99999
 
 class als(sensor):
     """
@@ -154,8 +184,7 @@ class als(sensor):
         self.i2cbus = smbus.SMBus(1)
         self.i2caddr = 0x23
 
-        # What to add to lux value to measure "true".
-        self.trim = 0.0
+        self.lux_trim = 0.0
 
     def read(self) -> float:
         # From register 0x10, sensor readings are 2 bytes:
@@ -163,10 +192,19 @@ class als(sensor):
         #   1 : LSB of lux reading
         data = self.i2cbus.read_i2c_block_data(self.i2caddr, 0x10, 2)
         val = data[0] << 8 | data[1]
-        lux = float(val)/1.2 + self.trim
+        lux = float(val)/1.2 + self.lux_trim
         return lux
 
+    def get_value(self) -> float:
+        try:
+            return self.read()
+        except:
+            logging.exception(f"Failure to read Ambient Light Sensor")
+            return 99999.9
+
 def gardenmon_main():
+    logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
+
     log_folder = '/var/log/gardenmon'
     if not os.path.exists(log_folder):
         os.makedirs(log_folder)
@@ -179,7 +217,7 @@ def gardenmon_main():
 
     time.sleep(1)
 
-    print("gardenmon starting...")
+    logging.info("gardenmon starting...")
 
     while True:
         current_time = datetime.datetime.now()
@@ -187,20 +225,20 @@ def gardenmon_main():
         timestamp = current_time.strftime('%Y-%m-%d %H:%M:%S')
         row = [timestamp]
 
-        cpu_temp_val = cpu_temp_sensor.read()
+        cpu_temp_val = cpu_temp_sensor.get_value()
         row.extend(["CPU Temperature", f"{cpu_temp_val:0.1f}", "F"])
 
-        aths_vals = aths_sensor.read()
+        aths_vals = aths_sensor.get_value()
         row.extend(["Ambient Temperature", f"{aths_vals['temperature']:0.1f}", "F"])
         row.extend(["Ambient Humidity",    f"{aths_vals['humidity']:0.1f}",    "%"])
 
-        sts_temperature = sts_sensor.read()
+        sts_temperature = sts_sensor.get_value()
         row.extend(["Soil Temperature", f"{sts_temperature:0.1f}", "F"])
 
-        sms_val = sms_sensor.read()
+        sms_val = sms_sensor.get_value()
         row.extend(["Soil Moisture Value", f"{sms_val}", "decimal_value"])
 
-        als_val = als_sensor.read()
+        als_val = als_sensor.get_value()
         row.extend(["Ambient Light", f"{als_val:0.1f}", "lx"])
 
         with open(f"{log_folder}/main.csv", "a") as csvfile:
