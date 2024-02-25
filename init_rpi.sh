@@ -29,6 +29,9 @@ sudo apt install python3-smbus -y
 # Enable I2C.
 sudo raspi-config nonint do_i2c 0
 
+# Enable 1wire.
+sudo raspi-config nonint do_onewire 0
+
 # Create gardenmon service and enable to start after reboot.
 sudo sh -c "sed -e 's?\${GARDENMON_PATH}?`pwd`?' gardenmon.service.template > /etc/systemd/system/gardenmon.service"
 sudo systemctl enable gardenmon
