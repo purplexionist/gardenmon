@@ -135,33 +135,23 @@ class sts(sensor):
 class sms(sensor):
     """
     Soil Moisture Sensor. Underlying sensor is a soil moisture probe with
-    the output fed into an ADS1115 ADC. Connected via I2C.
+    the output fed into an MCP3221 ADC. Connected via I2C.
     """
 
     def __init__(self):
         self.i2cbus = smbus.SMBus(1)
 
-        # addr bit is pulled to ground.
-        self.i2caddr = 0x48
+        # Address of the A5 variant of the MCP3221.
+        self.i2caddr = 0x4d
 
-        # Set the config register at 0x01. Set voltage range to +-4.096V and
-        # enable continuous-conversion mode.
-        self.i2cbus.write_i2c_block_data(self.i2caddr, 0x01, [0x82, 0x83])
-
-        # What to add to decimal value to read ~0V as ~0. Found via
-        # empirical testing.
-        self.value_trim = 4800
+        self.value_trim = 0
 
     def read(self) -> int:
-        # From register 0x00, sensor readings are 2 bytes:
+        # Read fake "register" 0x00, get back 2 bytes:
         #   0 : MSB of ADC reading
         #   1 : LSB of ADC reading
-        data = self.i2cbus.read_i2c_block_data(self.i2caddr, 0x00)
+        data = self.i2cbus.read_i2c_block_data(self.i2caddr, 0x00, 2)
         val = data[0] << 8 | data[1]
-
-        # Convert 16-bit two's complement to decimal.
-        if (val & (1 << (16 - 1))) != 0:
-            val = val - (1 << 16)
 
         val += self.value_trim
 

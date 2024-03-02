@@ -27,8 +27,9 @@
 - SHT30 Temperature/Humidity Sensor (I2C Interface): [Amazon](https://a.co/d/8ex6dXB)
 - DS18B20 Temperature Sensor (1Wire Interface): [Amazon](https://a.co/d/eyS4yjb)
 - Ambient Light Sensor (I2C Interface): [DFRobot](https://www.dfrobot.com/product-2664.html)
-- Soil Moisture Sensor (Analog Interface): [Amazon](https://a.co/d/6MesPOF)
-- ADS1115 ADC (for Soil Moisture Meter, I2C Interface): [Amazon](https://a.co/d/3aM6eM3)
+- Soil Moisture Sensor (Analog Interface\*): [Amazon](https://a.co/d/6MesPOF)
+
+_\* SMS analog input is converted via MCP3221 ADC on the GardenMon Interface Board (I2C Interface)_
 
 ### GardenMon Interface Board
 
@@ -96,10 +97,15 @@ sudo systemctl restart gardenmon
 
 To observe the status of the gardenmon service:
 ```
-sudo systemctl status gardenmon
+systemctl status gardenmon
 ```
 
-To read the output of the service:
+To read the stdout of the service:
 ```
 journalctl -eu gardenmon
+```
+
+To open a live stream of the csv data:
+```
+tail -F /var/log/gardenmon/main.csv
 ```
