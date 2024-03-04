@@ -250,7 +250,6 @@ def gardenmon_main():
 
         data = (cpu_temp_val, als_val, sms_val, 5,
                 sts_temperature, aths_vals['temperature'], aths_vals['humidity'], current_time)
-
         try:
             connection = mysql.connector.connect(
                             host=host,
@@ -263,7 +262,7 @@ def gardenmon_main():
             cursor.execute(insert_stmt, data)
             connection.commit()        
         except mysql.connector.Error as e:
-            print(f"An error occurred: {e}")
+            logging.info(f"An error occurred: {e}")
         finally:
             if connection and connection.is_connected():
                 cursor.close()
