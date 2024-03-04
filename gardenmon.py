@@ -263,11 +263,11 @@ def gardenmon_main():
             cursor.execute(insert_stmt, data)
             connection.commit()        
         except mysql.connector.Error as e:
-                print(f"An error occurred: {e}")
+            print(f"An error occurred: {e}")
         finally:
-                if connection and connection.is_connected():
-                    cursor.close()
-                    connection.close()
+            if connection and connection.is_connected():
+                cursor.close()
+                connection.close()
 
         time.sleep(1)
 
